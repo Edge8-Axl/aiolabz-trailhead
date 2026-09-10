@@ -43,9 +43,17 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      # Step 5: typecheck. There's no "typecheck" script in package.json, so we
+      # Step 5a: generate Next.js's route/page/layout types.
+      # Next 16 uses GLOBAL generated types like LayoutProps<"/"> that live in
+      # .next/types/. The clean runner doesn't have them yet, so tsc would fail
+      # with "Cannot find name 'LayoutProps'". This command creates them without
+      # a full build. (Your laptop only passed because .next/ already existed.)
+      - name: Generate Next.js types
+        run: npx next typegen
+
+      # Step 5b: typecheck. There's no "typecheck" script in package.json, so we
       # call the TypeScript compiler directly. --noEmit = "check types, write
-      # no files."
+      # no files." This now succeeds because the types above exist.
       - name: Typecheck
         run: npx tsc --noEmit
 
