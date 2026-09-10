@@ -1,0 +1,36 @@
+# Broken-link check: follows every link in your docs and reports dead ones.
+# Dead links are the most common embarrassing bug on a marketing site.
+name: Link Check
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  link-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v4
+
+      # lycheeverse/lychee-action is a pre-built action that wraps the Lychee
+      # link checker. We point it at our Markdown files.
+      - name: Run Lychee
+        uses: lycheeverse/lychee-action@v2
+        with:
+          # --no-progress: quieter logs (no progress bar in CI).
+          # --exclude-loopback: skip localhost/127.0.0.1 links — those point at
+          #   YOUR machine and can't be reached from GitHub's runner.
+          # The quoted globs are WHICH files to scan for links.
+          args: >-
+            --no-progress
+            --exclude-loopback
+            "README.md" "AGENTS.md" "CLAUDE.md" "docs/**/*.md"
+          # Fail the job (red X) if any broken link is found — so it can gate.
+          fail: true
+        env:
+          # Lets Lychee use GitHub's API politely for github.com links,
+          # avoiding rate-limit false alarms. GITHUB_TOKEN is provided
+          # automatically by Actions — you don't create it.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
