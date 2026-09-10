@@ -2,10 +2,15 @@
 # This is the same thing Vercel does on deploy — but here it's a gate you own.
 name: CI
 
-# For now we run on every push so you get instant feedback.
-# Later (branch-protection chapter) we'll add pull_request too.
+# Two triggers now:
+#   - pull_request: run on every PR (this is what branch protection gates on).
+#   - push to main: re-verify main itself right after a merge lands.
+# We deliberately DON'T run "push" on feature branches — the pull_request run
+# already covers those, so this avoids running the same checks twice.
 on:
+  pull_request:
   push:
+    branches: [main]
 
 jobs:
   build-and-check:
