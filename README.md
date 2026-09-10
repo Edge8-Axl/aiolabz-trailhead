@@ -36,5 +36,3 @@ The easiest way to deploy your Next.js app is to use the [Vercel Platform](https
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
 
 # aiolabz-trailhead
-
-[intentionally broken link](https://this-domain-does-not-exist-abc123456789.com)
