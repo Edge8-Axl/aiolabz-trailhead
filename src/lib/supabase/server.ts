@@ -40,3 +40,20 @@ export function createSupabaseTokenClient(accessToken: string) {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 }
+
+/**
+ * SERVICE-ROLE client — BYPASSES ALL RLS. Do NOT use in request-handling routes
+ * where RLS is your access control. It exists only for trusted server-side jobs
+ * that legitimately need a cross-user read, such as the notification channel
+ * resolving a recipient's email from auth.users (the email a manager can't read
+ * under RLS). Never expose the key to the browser; never prefix NEXT_PUBLIC_.
+ */
+export function createSupabaseAdminClient() {
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!serviceRoleKey) {
+    throw new Error("SUPABASE_SERVICE_ROLE_KEY is not set");
+  }
+  return createClient(SUPABASE_URL, serviceRoleKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+}
