@@ -1,0 +1,55 @@
+# Your first REAL check: does the app lint, typecheck, and build?
+# This is the same thing Vercel does on deploy — but here it's a gate you own.
+name: CI
+
+# For now we run on every push so you get instant feedback.
+# Later (branch-protection chapter) we'll add pull_request too.
+on:
+  push:
+
+jobs:
+  build-and-check:
+    runs-on: ubuntu-latest
+
+    # Environment variables for the WHOLE job.
+    # These are FAKE, PUBLIC placeholder values — safe to hard-code here because
+    # they're not secrets. The build just needs them to exist. Real secret keys
+    # will come from GitHub "Secrets" later, never written in the file.
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: dummy-anon-key-for-build
+
+    steps:
+      # Step 1: copy your repo onto the blank runner. Almost every job starts
+      # here. "uses:" means "run a pre-built action someone published" — this
+      # one is maintained by GitHub itself. The "@v4" pins the version.
+      - name: Check out the code
+        uses: actions/checkout@v4
+
+      # Step 2: install Node.js. "cache: npm" saves your downloaded packages
+      # between runs so future runs are much faster.
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      # Step 3: install dependencies. "npm ci" is the CI-friendly install:
+      # it installs EXACTLY what's in package-lock.json — reproducible and fast.
+      - name: Install dependencies
+        run: npm ci
+
+      # Step 4: lint (code-style / common-mistake checks).
+      - name: Lint
+        run: npm run lint
+
+      # Step 5: typecheck. There's no "typecheck" script in package.json, so we
+      # call the TypeScript compiler directly. --noEmit = "check types, write
+      # no files."
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      # Step 6: the build. If this fails, the code is broken — same signal
+      # Vercel would give you, caught before anyone reviews.
+      - name: Build
+        run: npm run build
