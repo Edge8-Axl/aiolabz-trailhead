@@ -26,3 +26,14 @@ jobs:
           uname -a
           echo "Triggered by a push from: ${{ github.actor }}"
           echo "On branch: ${{ github.ref_name }}"
+
+      # EXPERIMENT: "exit 1" is a command that reports failure (exit code 1).
+      # This step will turn RED and the job will stop right here.
+      - name: This step fails on purpose
+        run: |
+          echo "About to fail..."
+          exit 1
+
+      # Because the step above failed, this step is SKIPPED (grey, not run).
+      - name: You will never see this
+        run: echo "If you can read this in the logs, something is very wrong."
