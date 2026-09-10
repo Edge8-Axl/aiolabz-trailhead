@@ -28,4 +28,3 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   );
 }
 
-const oops: number = "This is a string, not a number";
