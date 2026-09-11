@@ -37,4 +37,4 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 
 # aiolabz-trailhead
 
-[test broken link](https://nonexistent.invalid)
+[test broken link](https://broken-link-test-xyz987654321.com)
