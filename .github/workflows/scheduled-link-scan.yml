@@ -1,0 +1,65 @@
+# Weekly external-link scan. This is NOT a merge gate — it runs on a timer and
+# reports link rot (external sites that died since we last looked) by opening a
+# GitHub Issue. Merges are never blocked by it.
+name: Weekly Link Scan
+
+on:
+  # schedule: run on a timer using "cron" syntax (see the 5 fields below).
+  # Times are ALWAYS in UTC — GitHub has no timezone option here.
+  #
+  #   ┌─ minute (0-59)
+  #   │ ┌─ hour (0-23, UTC)
+  #   │ │ ┌─ day of month (1-31)
+  #   │ │ │ ┌─ month (1-12)
+  #   │ │ │ │ ┌─ day of week (0-6, Sun=0)
+  #   │ │ │ │ │
+  #   0 1 * * 1   = 01:00 UTC every Monday
+  schedule:
+    - cron: "0 1 * * 1"
+
+  # workflow_dispatch adds a "Run workflow" BUTTON in the Actions tab, so you
+  # can trigger it by hand to test it now instead of waiting until Monday.
+  workflow_dispatch:
+
+jobs:
+  scan-links:
+    runs-on: ubuntu-latest
+
+    # Least-privilege permissions: this job's automatic GITHUB_TOKEN normally
+    # can't create issues. We grant JUST "issues: write" so it can open the
+    # report issue, and nothing more.
+    permissions:
+      contents: read
+      issues: write
+
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v4
+
+      - name: Run Lychee (all links, including external)
+        id: lychee
+        uses: lycheeverse/lychee-action@v2
+        with:
+          # No --exclude-loopback trickery here beyond localhost; we WANT to
+          # catch dead external links — that's the whole purpose of this scan.
+          args: >-
+            --no-progress
+            --exclude-loopback
+            --max-retries 2
+            "README.md" "AGENTS.md" "CLAUDE.md" "docs/**/*.md"
+          # fail: false = don't turn the run red. We handle a bad result
+          # ourselves by opening an issue in the next step.
+          fail: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Only runs if Lychee found broken links (non-zero exit code). Lychee
+      # writes a Markdown report to ./lychee/out.md, and this action turns
+      # that file into a GitHub Issue you'll see in the "Issues" tab.
+      - name: Open an issue if links are broken
+        if: steps.lychee.outputs.exit_code != 0
+        uses: peter-evans/create-issue-from-file@v5
+        with:
+          title: "🔗 Weekly link scan found broken links"
+          content-filepath: ./lychee/out.md
+          labels: automated, link-rot
