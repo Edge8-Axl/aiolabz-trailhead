@@ -1,0 +1,57 @@
+# Two security checks: a secret scan (Gitleaks) and a dependency audit.
+# They're two separate JOBS — GitHub runs them in PARALLEL on two machines.
+name: Security
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  # JOB 1 — Secret scan. DETERMINISTIC (a secret is either in the code or it
+  # isn't), so this is a great REQUIRED gate. Catches API keys / tokens /
+  # passwords accidentally committed — directly enforces your "never commit
+  # secrets" rule.
+  secret-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v4
+        with:
+          # fetch-depth: 0 = download the FULL commit history, not just the
+          # latest snapshot. Gitleaks scans past commits too, so a secret that
+          # was committed and later "deleted" is still caught.
+          fetch-depth: 0
+
+      - name: Scan for secrets with Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # NOTE: the Gitleaks ACTION is free on personal repos (like this one).
+          # On a GitHub ORGANIZATION repo (like the real DOXA one) it needs a
+          # paid GITLEAKS_LICENSE, OR you switch to the free Gitleaks CLI.
+          # That's a question for your Technology team — flagged, not decided.
+
+  # JOB 2 — Dependency audit. Runs `npm audit`. This is SEMI-nondeterministic
+  # OVER TIME: the same code can pass today and fail next week when a new
+  # advisory is published. So we keep it INFORMATIONAL (not a required gate) —
+  # it warns loudly but never blocks an unrelated merge.
+  dependency-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # --audit-level=high = only fail on HIGH or CRITICAL vulnerabilities.
+      # (Low/moderate advisories are extremely common and would be pure noise.)
+      - name: Audit dependencies
+        run: npm audit --audit-level=high
